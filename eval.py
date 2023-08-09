@@ -9,7 +9,8 @@ from time import perf_counter
 from functools import partial
 
 
-def evaluate_one(problem, time_limit, memory_limit, seed, instance):
+def evaluate_one(problem, time_limit, memory_limit, seed_instance):
+    seed, instance = seed_instance
     observation_function = ObservationFunction(problem=problem)
     policy = Policy(problem=problem)
 
@@ -49,7 +50,6 @@ def evaluate_one(problem, time_limit, memory_limit, seed, instance):
     # loop over the environment
     while not done:
         action = policy(action_set, observation)
-
         observation, action_set, reward, done, info = env.step(action)
         cumulated_reward += reward
 
@@ -66,7 +66,7 @@ def evaluate_one(problem, time_limit, memory_limit, seed, instance):
 def evaluate(n_workers, problem, time_limit, memory_limit, instance_files):
      jobs = [(seed, instance) for seed, instance in enumerate(instance_files)]
      with ThreadPool(n_workers) as p:
-        fn = partial(evaluate_one, problem, time_limit, memory_limit, seed)
+        fn = partial(evaluate_one, problem, time_limit, memory_limit)
         yield from p.imap_unordered(fn, jobs, chunksize=1)
 
 
@@ -88,24 +88,30 @@ if __name__ == '__main__':
         default=argparse.SUPPRESS,
         type=float,
     )
+    parser.add_argument(
+        '-j',
+        help='Number of jobs',
+        default=16,
+        type=int
+    )
  
     args = parser.parse_args()
 
     # check the Ecole version installed
     assert ec.__version__ == "0.7.3", "Wrong Ecole version."
 
-    print(f"Evaluating the {args.task} task agent on the {args.problem} problem.")
+    print(f"Evaluating the {args.agent} task agent on the {args.problem} problem.")
 
     # collect the instance files
     if args.problem == 'item_placement':
-        instances_path = pathlib.Path(f"instances/1_item_placement/{args.folder}/")
-        results_file = pathlib.Path(f"results/{args.task}/1_item_placement.csv")
+        instances_path = pathlib.Path(f"instances/1_item_placement/valid/")
+        results_file = pathlib.Path(f"results/{args.agent}/1_item_placement.csv")
     elif args.problem == 'load_balancing':
-        instances_path = pathlib.Path(f"instances/2_load_balancing/{args.folder}/")
-        results_file = pathlib.Path(f"results/{args.task}/2_load_balancing.csv")
+        instances_path = pathlib.Path(f"instances/2_load_balancing/valid/")
+        results_file = pathlib.Path(f"results/{args.agent}/2_load_balancing.csv")
     elif args.problem == 'anonymous':
-        instances_path = pathlib.Path(f"instances/3_anonymous/{args.folder}/")
-        results_file = pathlib.Path(f"results/{args.task}/3_anonymous.csv")
+        instances_path = pathlib.Path(f"instances/3_anonymous/valid/")
+        results_file = pathlib.Path(f"results/{args.agent}/3_anonymous.csv")
 
     print(f"Processing instances from {instances_path.resolve()}")
     instance_files = list(instances_path.glob('*.mps.gz'))
@@ -127,8 +133,8 @@ if __name__ == '__main__':
     # set up the proper agent, environment and goal for the task
     if args.agent == "strong":
         from submissions.strong.agents.dual import Policy, ObservationFunction
-        from common.environments import RootPrimalSearch as Environment
-        from common.rewards import TimeLimitPrimalIntegral as BoundIntegral
+        from common.environments import Branching as Environment
+        from common.rewards import TimeLimitDualIntegral as BoundIntegral
         time_limit = 15*60
         memory_limit = 8796093022207  # maximum
     else:
@@ -140,22 +146,14 @@ if __name__ == '__main__':
 
     with open(results_file, mode='a') as f:
         writer = csv.DictWriter(f, fieldnames=results_fieldnames)
-        for j, (name, result) in enumerate(evaluate(16,  args.problem, time_limit, memory_limit, instance_files)):
-            writer.writerow({"num": j, **result})
+        print("\n      name seed initial_primal_bound initial_dual_bound objective_offset cumulated_reward")
+        for j, (name, result) in enumerate(evaluate(args.j,  args.problem, time_limit, memory_limit, instance_files)):
+            writer.writerow(result)
             f.flush()
 
-            if (j % 25) == 0:
-                print("\n      name         seed     initial_primal_bound      initial_dual_bound    objective_offset      cumulated_reward")
-
-        print(
-            "{j:>5d} {name:<12} {seed:<8} {initial_primal_bound:<8} {initial_dual_bound:>8}"
-            " {objective_offset:>8} {cumulated_reward:>8}"
-            "".format(j=j, name=name, **result)
-        )
-
-      
-
-        print(f"  cumulated reward (to be maximized): {result['cumulated_reward']}")
-
-        # save instance results
+            print(
+                "{j:>5d} {name:<10} {seed:<5} {initial_primal_bound:<10.3f} {initial_dual_bound:<10.3f}"
+                " {objective_offset:<10.3f} {cumulated_reward:<10.3f}"
+                "".format(j=j, name=name, **result)
+            )
 
