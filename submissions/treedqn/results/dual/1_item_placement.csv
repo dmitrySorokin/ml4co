@@ -1,4 +1,0 @@
-instance,seed,initial_primal_bound,initial_dual_bound,objective_offset,cumulated_reward
-../../instances/1_item_placement/valid/item_placement_9993.mps.gz,0,520.2228323149974,1.4623572030000633,0,1316.1273173751629
-../../instances/1_item_placement/valid/item_placement_9906.mps.gz,1,682.6846919199986,6.525050190001042,0,6503.554096689531
-../../instances/1_item_placement/valid/item_placement_9913.mps.gz,2,547.0589617450003,4.104142111000255,0,3693.7484559556337

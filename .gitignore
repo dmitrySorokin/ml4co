@@ -2,3 +2,5 @@ singularity/base.sif
 instances
 common/__pycache__
 *.pyc
+results
+
