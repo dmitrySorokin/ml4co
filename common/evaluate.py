@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
         # loop over the environment
         while not done:
-            action = policy(action_set, observation)
+            action = policy(action_set, observation, env.model)
 
             if args.debug:
                 print(f"  action: {action}")
