@@ -95,7 +95,7 @@ if __name__ == '__main__':
         type=int
     )
     parser.add_argument(
-        'dataset',
+        '-dataset',
         choices=['train', 'valid', 'test'],
         default='test'
     )
