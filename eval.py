@@ -96,7 +96,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         'dataset',
-        choices=['train', 'valid', 'test']
+        choices=['train', 'valid', 'test'],
+        default='test'
     )
  
     args = parser.parse_args()
