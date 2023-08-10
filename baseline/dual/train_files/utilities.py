@@ -73,11 +73,11 @@ class BipartiteNodeData(torch_geometric.data.Data):
         self.edge_attr = edge_features
         self.variable_features = variable_features
         self.candidates = candidates
-        self.nb_candidates = len(candidates)
+        self.nb_candidates = len(candidates) if candidates is not None else None
         self.candidate_choices = candidate_choice
         self.candidate_scores = candidate_scores
 
-    def __inc__(self, key, value):
+    def __inc__(self, key, value, *args, **kwargs):
         if key == 'edge_index':
             return torch.tensor([[self.constraint_features.size(0)], [self.variable_features.size(0)]])
         elif key == 'candidates':
