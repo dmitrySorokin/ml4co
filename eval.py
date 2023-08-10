@@ -2,7 +2,7 @@ import argparse
 import csv
 import json
 import pathlib
-from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import Pool
 import ecole as ec
 import numpy as np
 from time import perf_counter
@@ -65,7 +65,7 @@ def evaluate_one(problem, time_limit, memory_limit, seed_instance):
 
 def evaluate(n_workers, problem, time_limit, memory_limit, instance_files):
      jobs = [(seed, instance) for seed, instance in enumerate(instance_files)]
-     with ThreadPool(n_workers) as p:
+     with Pool(n_workers) as p:
         fn = partial(evaluate_one, problem, time_limit, memory_limit)
         yield from p.imap_unordered(fn, jobs, chunksize=1)
 
@@ -94,6 +94,10 @@ if __name__ == '__main__':
         default=16,
         type=int
     )
+    parser.add_argument(
+        'dataset',
+        choices=['train', 'valid', 'test']
+    )
  
     args = parser.parse_args()
 
@@ -104,13 +108,13 @@ if __name__ == '__main__':
 
     # collect the instance files
     if args.problem == 'item_placement':
-        instances_path = pathlib.Path(f"instances/1_item_placement/valid/")
+        instances_path = pathlib.Path(f"instances/1_item_placement/{args.dataset}/")
         results_file = pathlib.Path(f"results/{args.agent}/1_item_placement.csv")
     elif args.problem == 'load_balancing':
-        instances_path = pathlib.Path(f"instances/2_load_balancing/valid/")
+        instances_path = pathlib.Path(f"instances/2_load_balancing/{args.dataset}/")
         results_file = pathlib.Path(f"results/{args.agent}/2_load_balancing.csv")
     elif args.problem == 'anonymous':
-        instances_path = pathlib.Path(f"instances/3_anonymous/valid/")
+        instances_path = pathlib.Path(f"instances/3_anonymous/{args.dataset}/")
         results_file = pathlib.Path(f"results/{args.agent}/3_anonymous.csv")
 
     print(f"Processing instances from {instances_path.resolve()}")
