@@ -139,6 +139,8 @@ if __name__ == '__main__':
     if args.agent == "strong":
         from submissions.strong.agents.dual import Policy, ObservationFunction
     elif args.agent == "il":
+        import sys
+        sys.path.append('baseline/dual')
         from baseline.dual.agents.dual import Policy, ObservationFunction        
     else:
         assert False, f"agent {args.agent} not supported"
