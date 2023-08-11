@@ -138,13 +138,15 @@ if __name__ == '__main__':
     # set up the proper agent, environment and goal for the task
     if args.agent == "strong":
         from submissions.strong.agents.dual import Policy, ObservationFunction
-        from common.environments import Branching as Environment
-        from common.rewards import TimeLimitDualIntegral as BoundIntegral
-        time_limit = 15*60
-        memory_limit = 8796093022207  # maximum
+    elif args.agent == "il":
+        from baseline.dual.agents.dual import Policy, ObservationFunction        
     else:
         assert False, f"agent {args.agent} not supported"
-  
+
+    from common.environments import Branching as Environment
+    from common.rewards import TimeLimitDualIntegral as BoundIntegral
+    time_limit = 15 * 60
+    memory_limit = 8796093022207  # maximum
 
     # override from command-line argument if provided
     time_limit = getattr(args, "timelimit", time_limit)
