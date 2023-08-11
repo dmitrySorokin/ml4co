@@ -9,7 +9,7 @@ from time import perf_counter
 from functools import partial
 
 
-def evaluate_one(problem, time_limit, memory_limit, seed_instance):
+def evaluate_one(problem, time_limit, memory_limit, seed_instance, Policy, ObservationFunction):
     seed, instance = seed_instance
     observation_function = ObservationFunction(problem=problem)
     policy = Policy(problem=problem)
@@ -63,10 +63,10 @@ def evaluate_one(problem, time_limit, memory_limit, seed_instance):
     })
 
 
-def evaluate(n_workers, problem, time_limit, memory_limit, instance_files):
+def evaluate(n_workers, problem, time_limit, memory_limit, instance_files, Policy, ObservationFunction):
      jobs = [(seed, instance) for seed, instance in enumerate(instance_files)]
      with Pool(n_workers) as p:
-        fn = partial(evaluate_one, problem, time_limit, memory_limit)
+        fn = partial(evaluate_one, problem, time_limit, memory_limit, Policy, ObservationFunction)
         yield from p.imap_unordered(fn, jobs, chunksize=1)
 
 
@@ -158,7 +158,7 @@ if __name__ == '__main__':
     with open(results_file, mode='a') as f:
         writer = csv.DictWriter(f, fieldnames=results_fieldnames)
         print("\n      name seed initial_primal_bound initial_dual_bound objective_offset cumulated_reward")
-        for j, (name, result) in enumerate(evaluate(args.j,  args.problem, time_limit, memory_limit, instance_files)):
+        for j, (name, result) in enumerate(evaluate(args.j,  args.problem, time_limit, memory_limit, instance_files, Policy, ObservationFunction)):
             writer.writerow(result)
             f.flush()
 
