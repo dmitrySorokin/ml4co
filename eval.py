@@ -2,14 +2,14 @@ import argparse
 import csv
 import json
 import pathlib
-from torch.multiprocessing import Pool, set_start_method
+from multiprocessing.pool import ThreadPool
 import ecole as ec
 import numpy as np
 from time import perf_counter
 from functools import partial
 
 
-def evaluate_one(problem, time_limit, memory_limit, seed_instance, Policy, ObservationFunction):
+def evaluate_one(problem, time_limit, memory_limit, seed_instance):
     seed, instance = seed_instance
     observation_function = ObservationFunction(problem=problem)
     policy = Policy(problem=problem)
@@ -63,16 +63,14 @@ def evaluate_one(problem, time_limit, memory_limit, seed_instance, Policy, Obser
     })
 
 
-def evaluate(n_workers, problem, time_limit, memory_limit, instance_files, Policy, ObservationFunction):
+def evaluate(n_workers, problem, time_limit, memory_limit, instance_files):
      jobs = [(seed, instance) for seed, instance in enumerate(instance_files)]
-     with Pool(n_workers) as p:
-        fn = partial(evaluate_one, problem, time_limit, memory_limit, Policy, ObservationFunction)
+     with ThreadPool(n_workers) as p:
+        fn = partial(evaluate_one, problem, time_limit, memory_limit)
         yield from p.imap_unordered(fn, jobs, chunksize=1)
 
 
 if __name__ == '__main__':
-    set_start_method('spawn')
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         'agent',
