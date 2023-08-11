@@ -2,7 +2,7 @@ import argparse
 import csv
 import json
 import pathlib
-from multiprocessing.pool import Pool
+from torch.multiprocessing import Pool, set_start_method
 import ecole as ec
 import numpy as np
 from time import perf_counter
@@ -71,6 +71,8 @@ def evaluate(n_workers, problem, time_limit, memory_limit, instance_files):
 
 
 if __name__ == '__main__':
+    set_start_method('spawn')
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         'agent',
