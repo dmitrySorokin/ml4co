@@ -16,6 +16,7 @@ import sys
 
 sys.path.append('../../..')
 from common.environments import Branching as Environment, BranchingDynamics
+from common.rewards import TimeLimitDualIntegral as BoundIntegral
 
 from utilities import ChildObservation
 from replay_buffer import ReplayBuffer
@@ -55,17 +56,29 @@ class EcoleBranching(Environment):
             'lp_iterations': ecole.reward.LpIterations().cumsum(),
             'solving_time': ecole.reward.SolvingTime().cumsum(),
         }
-        
+
+        self.integral_function = BoundIntegral()
+
         super().__init__(
             time_limit=time_limit, # time limit for solving each instance
             observation_function=observation_function,
             information_function=information_function,
+            reward_function=-self.integral_function,
         )
 
     def reset(self, instance: Path):
         with open(str(instance)[:-6] + 'json') as f:
             instance_info = json.load(f)
+
+        # set up the reward function parameters for that instance
         initial_primal_bound = instance_info["primal_bound"]
+        initial_dual_bound = instance_info["dual_bound"]
+        objective_offset = 0
+
+        self.integral_function.set_parameters(
+                initial_primal_bound=initial_primal_bound,
+                initial_dual_bound=initial_dual_bound,
+                objective_offset=objective_offset)
         
         task = Model.from_file(str(instance))
         return super().reset(task, training=self.training, objective_limit=initial_primal_bound)
