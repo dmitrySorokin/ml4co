@@ -90,12 +90,12 @@ class GNNPolicy(nn.Module):
             return obs.row_features.to(self.device), \
                 obs.edge_index.to(self.device), \
                 obs.edge_attr.to(self.device),  \
-                obs.variable_features.to(self.device)
+                obs.column_features.to(self.device)
         
         return torch.from_numpy(obs.row_features.astype(np.float32)).to(self.device), \
             torch.LongTensor(obs.edge_features.indices.astype(np.int16)).to(self.device), \
             torch.from_numpy(obs.edge_features.values.astype(np.float32)).view(-1, 1).to(self.device), \
-            torch.from_numpy(obs.variable_features.astype(np.float32)).to(self.device)
+            torch.from_numpy(obs.column_features.astype(np.float32)).to(self.device)
 
     def forward(self, obs):
         constraint_features, edge_indices, edge_features, variable_features = self._unpack(obs)
