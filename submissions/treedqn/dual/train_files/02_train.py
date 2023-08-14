@@ -220,7 +220,7 @@ def main(cfg: typing.Dict):
         writer.add_scalar('episode/return', info['return'], episode_id)
         writer.add_scalar('train/epsilon', agent.epsilon, episode_id)
 
-        print(episode_id, info['num_nodes'])
+        print(f" ep: {episode_id}, nnodes: {info['num_nodes']}, ret: {info['return']}")
 
         episode_loss = []
         for i in range(num_obs):
@@ -232,10 +232,10 @@ def main(cfg: typing.Dict):
         chkpt = out_dir + f'/checkpoint_{episode_id}.pkl'
         agent.save(chkpt)
 
-        if episode_id % cfg.eval_freq == 0 or episode_id == cfg.num_episodes:
+        if episode_id % cfg['eval_freq'] == 0 or episode_id == cfg['num_episodes']:
             chkpt = out_dir + f'/checkpoint_{episode_id}.pkl'
             agent.save(chkpt)
-            in_queue.put((chkpt, episode_id, episode_id == cfg.num_episodes))
+            in_queue.put((chkpt, episode_id, episode_id == cfg['num_episodes']))
 
         episode_id += 1
         epsilon = 1. - (1. - epsilon_min) / decay_steps * update_id
