@@ -63,7 +63,7 @@ class EcoleBranching(Environment):
         )
 
     def reset(self, instance: Path):
-        with open(instance.with_name(instance.stem).with_suffix('.json')) as f:
+        with open(str(instance)[:-6] + 'json') as f:
             instance_info = json.load(f)
         initial_primal_bound = instance_info["primal_bound"]
         
