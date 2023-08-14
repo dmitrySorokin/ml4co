@@ -23,7 +23,7 @@ class DQNAgent:
 
     def _predict(self, qnet, obs):
         value, adv = qnet(obs)
-        return -torch.exp(value.mean() + (adv - adv.mean()))
+        return torch.exp(value.mean() + (adv - adv.mean()))
 
     def _act(self, qnet, obs, action_set):
         with torch.no_grad():
