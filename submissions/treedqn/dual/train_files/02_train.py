@@ -12,6 +12,9 @@ from ecole.scip import Model
 from argparse import ArgumentParser
 import glob
 import typing
+import sys
+
+sys.path.append('../..')
 from common.environments import Branching as Environment
 
 from utilities import ChildObservation
