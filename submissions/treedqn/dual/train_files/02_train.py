@@ -14,8 +14,8 @@ import glob
 import typing
 import sys
 
-sys.path.append('../..')
-from common.environments import Branching as Environment
+sys.path.append('../../..')
+from common.environments import Branching as Environment, BranchingDynamics
 
 from utilities import ChildObservation
 from replay_buffer import ReplayBuffer
@@ -23,7 +23,7 @@ from dqn_agent import DQNAgent
 
 
 
-class DFSBranchingDynamics(ecole.dynamics.BranchingDynamics):
+class DFSBranchingDynamics(BranchingDynamics):
     """
     Custom branching environment that changes the node strategy to DFS when training.
     """
@@ -44,7 +44,7 @@ class DFSBranchingDynamics(ecole.dynamics.BranchingDynamics):
 class EcoleBranching(Environment):
     __Dynamics__ = DFSBranchingDynamics
     
-    def __init__(self, training: typing.bool):
+    def __init__(self, time_limit, training):
         self.training = training
     
         observation_function = {
@@ -52,7 +52,7 @@ class EcoleBranching(Environment):
             'children': ChildObservation()
         }
         super().__init__(
-            time_limit=3600, # time limit for solving each instance
+            time_limit=time_limit, # time limit for solving each instance
             observation_function=observation_function,
         )
 
@@ -74,7 +74,7 @@ class EvalProcess(mp.Process):
         self.out_queue = out_queue
 
     def run(self):
-        env = EcoleBranching(training=False)
+        env = EcoleBranching(time_limit=15 * 60, training=False)
         agent = DQNAgent(device=self.device, epsilon=0)
         stop = False
         while not stop:
@@ -151,18 +151,18 @@ def main(cfg: typing.Dict):
 
     # get instances
     if args.problem == 'item_placement':
-        instances_train = glob.glob('../../instances/1_item_placement/train/*.mps.gz')
-        instances_valid = glob.glob('../../instances/1_item_placement/valid/*.mps.gz')
+        instances_train = glob.glob('../../../instances/1_item_placement/train/*.mps.gz')
+        instances_valid = glob.glob('../../../instances/1_item_placement/valid/*.mps.gz')
         out_dir = 'train_files/samples/1_item_placement'
 
     elif args.problem == 'load_balancing':
-        instances_train = glob.glob('../../instances/2_load_balancing/train/*.mps.gz')
-        instances_valid = glob.glob('../../instances/2_load_balancing/valid/*.mps.gz')
+        instances_train = glob.glob('../../../instances/2_load_balancing/train/*.mps.gz')
+        instances_valid = glob.glob('../../../instances/2_load_balancing/valid/*.mps.gz')
         out_dir = 'train_files/samples/2_load_balancing'
 
     elif args.problem == 'anonymous':
-        instances_train = glob.glob('../../instances/3_anonymous/train/*.mps.gz')
-        instances_valid = glob.glob('../../instances/3_anonymous/valid/*.mps.gz')
+        instances_train = glob.glob('../../../instances/3_anonymous/train/*.mps.gz')
+        instances_valid = glob.glob('../../../instances/3_anonymous/valid/*.mps.gz')
         out_dir = 'train_files/samples/3_anonymous'
 
     else:
@@ -173,38 +173,38 @@ def main(cfg: typing.Dict):
 
 
     # randomization setup
-    rng = np.random.RandomState(cfg.seed)
-    torch.manual_seed(cfg.seed)
+    rng = np.random.RandomState(cfg['seed'])
+    torch.manual_seed(cfg['seed'])
     
 
-    env = EcoleBranching(training=True)
+    env = EcoleBranching(time_limit=15 * 60, training=True)
 
-    agent = DQNAgent(device=cfg.device, epsilon=1)
+    agent = DQNAgent(device=cfg['device'], epsilon=1)
     agent.train()
 
     replay_buffer = ReplayBuffer(
-        max_size=cfg.buffer_max_size,
-        start_size=cfg.buffer_start_size
+        max_size=cfg['buffer_max_size'],
+        start_size=cfg['buffer_start_size']
     )
 
     pbar = tqdm(total=replay_buffer.start_size, desc='init')
     while not replay_buffer.is_ready():
-        num_obs, _ = rollout(env, agent, replay_buffer, instances_train, rng)
+        num_obs, _ = rollout(env, agent, replay_buffer, instances_train, cfg['seed'], rng)
         pbar.update(num_obs)
     pbar.close()
 
-    pbar = tqdm(total=cfg.num_episodes, desc='train')
+    pbar = tqdm(total=cfg['num_episodes'], desc='train')
     update_id = 0
     episode_id = 0
     epsilon_min = 0.01
-    decay_steps = cfg.decay_steps
+    decay_steps = cfg['decay_steps']
 
     in_queue, out_queue = mp.Queue(), mp.Queue()
-    evaler = EvalProcess(cfg.device, instances_valid, in_queue, out_queue)
+    evaler = EvalProcess(cfg['device'], instances_valid, in_queue, out_queue)
     evaler.start()
 
     while episode_id < pbar.total:
-        num_obs, info = rollout(env, agent, replay_buffer, instances_train, rng)
+        num_obs, info = rollout(env, agent, replay_buffer, instances_train, cfg['seed'], rng)
         writer.add_scalar('num_nodes', info['num_nodes'], episode_id)
         writer.add_scalar('lp_iterations', info['lp_iterations'], episode_id)
         writer.add_scalar('solving_time', info['solving_time'], episode_id)

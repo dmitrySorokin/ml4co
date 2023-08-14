@@ -1,4 +1,4 @@
-from .search_tree import SearchTree
+from search_tree import SearchTree
 
 
 class ChildObservation:
