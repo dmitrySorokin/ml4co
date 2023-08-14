@@ -50,7 +50,10 @@ class EcoleBranching(Environment):
         observation_function = ecole.observation.NodeBipartite()
 
         information_function = {
-            'children': ChildObservation()
+            'children': ChildObservation(),
+            'num_nodes': ecole.reward.NNodes().cumsum(),
+            'lp_iterations': ecole.reward.LpIterations().cumsum(),
+            'solving_time': ecole.reward.SolvingTime().cumsum(),
         }
         
         super().__init__(
@@ -100,7 +103,8 @@ class EvalProcess(mp.Process):
                 n_nodes.append(env.model.as_pyscipopt().getNNodes())
                 returns.append(cum_reward)
             geomean = np.exp(np.mean(np.log(n_nodes)))
-            self.out_queue.put((geomean, np.mean(returns), episode))
+            self.out_queue.put(('eval/nnodes', geomean, episode))
+            self.out_queue.put(('eval/return', np.mean(returns), episode))
 
 
 def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=1000):
@@ -109,6 +113,7 @@ def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=1000)
     env.seed(seed)
     obs, act_set, reward, done, info = env.reset(instance)
     
+    cum_reward = reward
     traj_obs, traj_rew, traj_act, traj_actset, traj_done = [], [], [], [], []
     while not done:
         action = agent.act(obs, act_set, deterministic=False)
@@ -120,6 +125,7 @@ def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=1000)
         
         obs, act_set, reward, done, info = env.step(action)
         traj_done.append(done)
+        cum_reward += reward
 
     traj_nextobs, traj_nextactset = [], []
     for children in info['children']:
@@ -142,6 +148,7 @@ def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=1000)
     for transition in zip(traj_obs, traj_rew, traj_act, traj_nextobs, traj_nextactset, traj_done):
         replay_buffer.add_transition(*transition)
 
+    info['return'] = cum_reward
     return len(ids), info
 
 
@@ -207,10 +214,11 @@ def main(cfg: typing.Dict):
 
     while episode_id < pbar.total:
         num_obs, info = rollout(env, agent, replay_buffer, instances_train, cfg['seed'], rng)
-        writer.add_scalar('num_nodes', info['num_nodes'], episode_id)
-        writer.add_scalar('lp_iterations', info['lp_iterations'], episode_id)
-        writer.add_scalar('solving_time', info['solving_time'], episode_id)
-        writer.add_scalar('epsilon', agent.epsilon, episode_id)
+        writer.add_scalar('episode/num_nodes', info['num_nodes'], episode_id)
+        writer.add_scalar('episode/lp_iterations', info['lp_iterations'], episode_id)
+        writer.add_scalar('episode/solving_time', info['solving_time'], episode_id)
+        writer.add_scalar('episode/return', info['return'], episode_id)
+        writer.add_scalar('train/epsilon', agent.epsilon, episode_id)
 
         print(episode_id, info['num_nodes'])
 
@@ -219,7 +227,7 @@ def main(cfg: typing.Dict):
             episode_loss.append(agent.update(update_id, replay_buffer.sample()))
             update_id += 1
         
-        writer.add_scalar('loss', np.mean(episode_loss), episode_id)
+        writer.add_scalar('train/loss', np.mean(episode_loss), episode_id)
 
         chkpt = out_dir + f'/checkpoint_{episode_id}.pkl'
         agent.save(chkpt)
@@ -234,7 +242,7 @@ def main(cfg: typing.Dict):
         agent.epsilon = max(epsilon_min, epsilon)
 
         while not out_queue.empty():
-            writer.add_scalar('eval', *out_queue.get_nowait())
+            writer.add_scalar(*out_queue.get_nowait())
 
 
         pbar.update(1)
@@ -242,7 +250,7 @@ def main(cfg: typing.Dict):
     pbar.close()
 
     while not out_queue.empty():
-        writer.add_scalar('eval', *out_queue.get_nowait())
+        writer.add_scalar(*out_queue.get_nowait())
 
 
 if __name__ == '__main__':
