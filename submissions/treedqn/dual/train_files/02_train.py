@@ -47,13 +47,16 @@ class EcoleBranching(Environment):
     def __init__(self, time_limit, training):
         self.training = training
     
-        observation_function = {
-            'state' : ecole.observation.NodeBipartite(),
+        observation_function = ecole.observation.NodeBipartite()
+
+        information_function = {
             'children': ChildObservation()
         }
+        
         super().__init__(
             time_limit=time_limit, # time limit for solving each instance
             observation_function=observation_function,
+            information_function=information_function,
         )
 
     def reset(self, instance: Path):
@@ -108,10 +111,9 @@ def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=1000)
     
     traj_obs, traj_rew, traj_act, traj_actset, traj_done = [], [], [], [], []
     while not done:
-        state = obs['state']
-        action = agent.act(state, act_set, deterministic=False)
+        action = agent.act(obs, act_set, deterministic=False)
         
-        traj_obs.append(state)
+        traj_obs.append(obs)
         traj_rew.append(reward)
         traj_act.append(action)
         traj_actset.append(act_set)
@@ -120,7 +122,7 @@ def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=1000)
         traj_done.append(done)
 
     traj_nextobs, traj_nextactset = [], []
-    for children in obs['children']:
+    for children in info['children']:
         traj_nextobs.append([traj_obs[c] for c in children])
         traj_nextactset.append([traj_actset[c] for c in children])
 
