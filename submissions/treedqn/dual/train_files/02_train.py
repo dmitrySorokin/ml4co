@@ -163,7 +163,7 @@ def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=10000
         replay_buffer.add_transition(*transition)
 
     info['return'] = cum_reward
-    return tree_size, info
+    return len(traj_obs), info
 
 
 def main(cfg: typing.Dict):
