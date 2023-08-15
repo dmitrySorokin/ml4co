@@ -99,7 +99,9 @@ class GNNPolicy(nn.Module):
 
     def forward(self, obs):
         constraint_features, edge_indices, edge_features, variable_features = self._unpack(obs)
-    
+        #print(constraint_features.sum(), edge_indices.sum(), edge_features.sum(), variable_features.sum(), torch.where(variable_features != variable_features), 'hui')
+        variable_features[torch.where(variable_features != variable_features)] = 0.0
+
         reversed_edge_indices = torch.stack([edge_indices[1], edge_indices[0]], dim=0)
         
         constraint_features = self.cons_embedding(constraint_features)

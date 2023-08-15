@@ -23,7 +23,8 @@ class DQNAgent:
 
     def _predict(self, qnet, obs):
         value, adv = qnet(obs)
-        return torch.exp(value.mean() + (adv - adv.mean()))
+        logit = value.mean() + (adv - adv.mean())
+        return torch.exp(logit)
 
     def _act(self, qnet, obs, action_set):
         with torch.no_grad():
@@ -44,12 +45,15 @@ class DQNAgent:
         logq_pred = (value.mean() + (adv - adv.mean()))[action]
 
         next_actions = [self._act(self.net, nobs, nactset) for nobs, nactset in zip(nextobs, next_actset)]
-        q_next = sum([
+        q_next = torch.zeros_like(logq_pred) + sum([
             self._predict(self.target_net, nobs)[naction].detach() for nobs, naction in zip(nextobs, next_actions)
         ])
 
-        q_fact = torch.tensor(reward + q_next * self.gamma * (1 - done), device=logq_pred.device)
-        return (logq_pred - torch.log(torch.abs(q_fact))) ** 2
+        q_fact = reward + q_next * self.gamma * (1 - done)
+        q_fact = torch.maximum(q_fact, torch.tensor(1e-5))
+        # print(reward, q_next, done, self.gamma, q_fact, logq_pred)
+        assert q_fact == q_fact, f'{reward}, {q_next}, {done}, {self.gamma}, {q_fact}, {logq_pred}'
+        return (logq_pred - torch.log(q_fact)) ** 2
 
     def update(self, step, batch):
         self.optimizer.zero_grad()
