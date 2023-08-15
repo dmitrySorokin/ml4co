@@ -120,7 +120,7 @@ class EvalProcess(mp.Process):
             self.out_queue.put(('eval/return', np.mean(returns), episode))
 
 
-def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=1000000):
+def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=10000):
     instance = Path(rng.choice(instances))
 
     env.seed(seed)
@@ -147,16 +147,16 @@ def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=10000
 
     assert len(traj_obs) == len(traj_nextobs)
     tree_size = len(traj_obs)
-    # ids = np.random.choice(range(tree_size), min(tree_size, max_tree_size), replace=False)
+    ids = np.random.choice(range(tree_size), min(tree_size, max_tree_size), replace=False)
     
-    #ids = list(range(min(tree_size, max_tree_size)))
-    #traj_obs = np.asarray(traj_obs)[ids]
-    #traj_rew = np.asarray(traj_rew)[ids]
-    #traj_act = np.asarray(traj_act)[ids]
+    # ids = list(range(min(tree_size, max_tree_size)))
+    traj_obs = np.asarray(traj_obs)[ids]
+    traj_rew = np.asarray(traj_rew)[ids]
+    traj_act = np.asarray(traj_act)[ids]
     
-    #traj_nextobs = np.array(traj_nextobs, dtype=list)[ids]
-    #traj_nextactset = np.array(traj_nextactset, dtype=list)[ids]
-    #traj_done = np.asarray(traj_done)[ids]
+    traj_nextobs = np.array(traj_nextobs, dtype=list)[ids]
+    traj_nextactset = np.array(traj_nextactset, dtype=list)[ids]
+    traj_done = np.asarray(traj_done)[ids]
 
 
     for transition in zip(traj_obs, traj_rew, traj_act, traj_nextobs, traj_nextactset, traj_done):
@@ -271,11 +271,11 @@ if __name__ == '__main__':
     cfg = {
         'device': 'cuda:0',
         'seed': 0,
-        'buffer_max_size': int(1e7),
-        'buffer_start_size': int(1e6),
-        'num_episodes': 1000,
-        'eval_freq': 50,
-        'decay_steps': int(1e8),
+        'buffer_max_size': int(1e6),
+        'buffer_start_size': int(1e5),
+        'num_episodes': 100,
+        'eval_freq': 10,
+        'decay_steps': int(1e6),
     }
 
     main(cfg)
