@@ -120,7 +120,7 @@ class EvalProcess(mp.Process):
             self.out_queue.put(('eval/return', np.mean(returns), episode))
 
 
-def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=10000):
+def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=1000):
     instance = Path(rng.choice(instances))
 
     env.seed(seed)
@@ -271,11 +271,11 @@ if __name__ == '__main__':
     cfg = {
         'device': 'cuda:0',
         'seed': 0,
-        'buffer_max_size': int(1e6),
-        'buffer_start_size': int(1e5),
+        'buffer_max_size': int(1e5),
+        'buffer_start_size': int(1e3),
         'num_episodes': 100,
         'eval_freq': 10,
-        'decay_steps': int(1e6),
+        'decay_steps': int(1e5),
     }
 
     main(cfg)
