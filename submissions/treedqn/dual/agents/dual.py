@@ -24,7 +24,7 @@ class Policy():
 
         # set up policy
         self.device = f"cuda:0"
-        self.net = GNNPolicy().to(self.device)
+        self.net = GNNPolicy(self.device).to(self.device)
         self.net.load_state_dict(torch.load(params_path))
 
     def seed(self, seed):

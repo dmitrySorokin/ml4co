@@ -59,12 +59,20 @@ class EcoleBranching(Environment):
 
         self.integral_function = BoundIntegral()
 
-        super().__init__(
-            time_limit=time_limit, # time limit for solving each instance
-            observation_function=observation_function,
-            information_function=information_function,
-            reward_function=-self.integral_function,
-        )
+        if training:
+            super().__init__(
+                time_limit=time_limit, # time limit for solving each instance
+                observation_function=observation_function,
+                information_function=information_function,
+                reward_function=-self.integral_function,
+            )
+        else:
+            super().__init__(
+                time_limit=time_limit, # time limit for solving each instance
+                observation_function=observation_function,
+                reward_function=-self.integral_function,
+           )
+
 
     def reset(self, instance: Path):
         with open(str(instance)[:-6] + 'json') as f:
@@ -200,7 +208,7 @@ def main(cfg: typing.Dict):
     torch.manual_seed(cfg['seed'])
     
 
-    env = EcoleBranching(time_limit=15 * 60, training=True)
+    env = EcoleBranching(time_limit=5 * 60, training=True)
 
     agent = DQNAgent(device=cfg['device'], epsilon=1)
     agent.train()
@@ -271,7 +279,7 @@ if __name__ == '__main__':
     cfg = {
         'device': 'cuda:0',
         'seed': 0,
-        'buffer_max_size': int(1e5),
+        'buffer_max_size': int(1e4),
         'buffer_start_size': int(1e3),
         'num_episodes': 100,
         'eval_freq': 10,
