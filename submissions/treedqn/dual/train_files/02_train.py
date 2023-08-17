@@ -208,9 +208,10 @@ def main(cfg: typing.Dict):
     torch.manual_seed(cfg['seed'])
     
 
-    env = EcoleBranching(time_limit=5 * 60, training=True)
+    env = EcoleBranching(time_limit=15 * 60, training=True)
 
     agent = DQNAgent(device=cfg['device'], epsilon=1)
+    agent.load_il('il_params.pkl')
     agent.train()
 
     replay_buffer = ReplayBuffer(

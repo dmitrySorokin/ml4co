@@ -85,6 +85,14 @@ class DQNAgent:
             torch.load(path, map_location=self.net.device)
         )
 
+    def load_il(self, path):
+        self.net.load_il(
+            torch.load(path, map_location=self.net.device)
+        )
+        self.target_net.load_il(
+            torch.load(path, map_location=self.target_net.device)
+        )
+
     def train(self):
         self.net.train()
         self.target_net.train()
