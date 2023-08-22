@@ -188,7 +188,7 @@ class GNNPolicy(BaseModel):
         self.output_module = torch.nn.Sequential(
             torch.nn.Linear(emb_size, emb_size),
             torch.nn.ReLU(),
-            torch.nn.Linear(emb_size, 1, bias=False),
+            torch.nn.Linear(emb_size, 1),
         )
 
         self.value = torch.nn.Sequential(
@@ -198,15 +198,25 @@ class GNNPolicy(BaseModel):
         )
 
     def load_il(self, state_dict):
-        print(list(state_dict.keys()))
-        asdf
-        pass
+        self.load_state_dict(state_dict, strict=False)
+        
+        def init_weights(m):
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.xavier_uniform_(m.weight)
+                m.bias.data.fill_(0.01)
+
+        self.output_module.apply(init_weights)
+        self.value.apply(init_weights)
 
     def _unpack(self, obs):
+        variable_features = obs.column_features
+        variable_features = np.delete(variable_features, 14, axis=1)
+        variable_features = np.delete(variable_features, 13, axis=1)
+
         return torch.from_numpy(obs.row_features.astype(np.float32)).to(self.device), \
             torch.LongTensor(obs.edge_features.indices.astype(np.int16)).to(self.device), \
             torch.from_numpy(obs.edge_features.values.astype(np.float32)).view(-1, 1).to(self.device), \
-            torch.from_numpy(obs.column_features.astype(np.float32)).to(self.device)
+            torch.from_numpy(variable_features.astype(np.float32)).to(self.device)
 
     def forward(self, obs):
         with torch.no_grad():

@@ -184,7 +184,7 @@ def main(cfg: typing.Dict):
     if args.problem == 'item_placement':
         instances_train = glob.glob('../../../instances/1_item_placement/train/*.mps.gz')
         instances_valid = glob.glob('../../../instances/1_item_placement/valid/*.mps.gz')
-        out_dir = 'train_files/samples/1_item_placement'
+        out_dir = 'train_files/samples_finetune/1_item_placement'
 
     elif args.problem == 'load_balancing':
         instances_train = glob.glob('../../../instances/2_load_balancing/train/*.mps.gz')
@@ -208,10 +208,10 @@ def main(cfg: typing.Dict):
     torch.manual_seed(cfg['seed'])
     
 
-    env = EcoleBranching(time_limit=15 * 60, training=True)
+    env = EcoleBranching(time_limit=5 * 60, training=True)
 
     agent = DQNAgent(device=cfg['device'], epsilon=1)
-    agent.load_il('il_params.pkl')
+    agent.load_il('train_files/il_params.pkl')
     agent.train()
 
     replay_buffer = ReplayBuffer(
