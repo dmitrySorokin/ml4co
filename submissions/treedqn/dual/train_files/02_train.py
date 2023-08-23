@@ -282,9 +282,9 @@ if __name__ == '__main__':
         'seed': 0,
         'buffer_max_size': int(1e4),
         'buffer_start_size': int(1e3),
-        'num_episodes': 100,
-        'eval_freq': 10,
-        'decay_steps': int(1e5),
+        'num_episodes': 500,
+        'eval_freq': 100,
+        'decay_steps': int(5e5),
     }
 
     main(cfg)
