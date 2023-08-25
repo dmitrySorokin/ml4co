@@ -177,6 +177,7 @@ def rollout(env, agent, replay_buffer, instances, seed, rng, max_tree_size=1000)
 def main(cfg: typing.Dict):
     parser = ArgumentParser()
     parser.add_argument('problem')
+    parser.add_argument('--ckpt', default=None, type=int)
 
     args = parser.parse_args()
 
@@ -211,7 +212,14 @@ def main(cfg: typing.Dict):
     env = EcoleBranching(time_limit=5 * 60, training=True)
 
     agent = DQNAgent(device=cfg['device'], epsilon=1)
-    agent.load_il('train_files/il_params.pkl')
+
+    if args.ckpt is not None:
+        agent.load(f'train_files/samples_finetune/1_item_placement/checkpoint_{args.ckpt}.pkl')
+        episode_id = args.ckpt
+    else:
+        agent.load_il('train_files/il_params.pkl')
+        episode_id = 0
+    
     agent.train()
 
     replay_buffer = ReplayBuffer(
@@ -227,7 +235,6 @@ def main(cfg: typing.Dict):
 
     pbar = tqdm(total=cfg['num_episodes'], desc='train')
     update_id = 0
-    episode_id = 0
     epsilon_min = 0.01
     decay_steps = cfg['decay_steps']
 
