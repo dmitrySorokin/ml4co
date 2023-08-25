@@ -212,13 +212,19 @@ def main(cfg: typing.Dict):
     env = EcoleBranching(time_limit=5 * 60, training=True)
 
     agent = DQNAgent(device=cfg['device'], epsilon=1)
+    epsilon_min = 0.01
+    decay_steps = cfg['decay_steps']
 
     if args.ckpt is not None:
         agent.load(f'train_files/samples_finetune/1_item_placement/checkpoint_{args.ckpt}.pkl')
         episode_id = args.ckpt
+        update_id = episode_id * 1000 # max tree size = 1000
+        epsilon = 1. - (1. - epsilon_min) / decay_steps * update_id
+        agent.epsilon = max(epsilon_min, epsilon)
     else:
         agent.load_il('train_files/il_params.pkl')
         episode_id = 0
+        update_id = 0
     
     agent.train()
 
@@ -234,9 +240,6 @@ def main(cfg: typing.Dict):
     pbar.close()
 
     pbar = tqdm(total=cfg['num_episodes'], desc='train')
-    update_id = 0
-    epsilon_min = 0.01
-    decay_steps = cfg['decay_steps']
 
     in_queue, out_queue = mp.Queue(), mp.Queue()
     evaler = EvalProcess(cfg['device'], instances_valid, in_queue, out_queue)
