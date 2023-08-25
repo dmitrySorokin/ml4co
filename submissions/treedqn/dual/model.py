@@ -222,7 +222,11 @@ class GNNPolicy(BaseModel):
         with torch.no_grad():
             constraint_features, edge_indices, edge_features, variable_features = self._unpack(obs)
 
+            constraint_features[torch.where(constraint_features != constraint_features)] = 0.0
+            edge_indices[torch.where(edge_indices != edge_indices)] = 0.0
+            edge_features[torch.where(edge_features != edge_features)] = 0.0
             variable_features[torch.where(variable_features != variable_features)] = 0.0
+
             reversed_edge_indices = torch.stack([edge_indices[1], edge_indices[0]], dim=0)
 
             constraint_features = self.cons_embedding(constraint_features)
